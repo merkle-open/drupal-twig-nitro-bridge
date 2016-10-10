@@ -12,21 +12,8 @@
     "Twig",
     "Nitro"
   ],
-  "repositories": [
-    {
-      "type": "package",
-      "package": {
-        "name": "namics/twig-nitro-library",
-        "version": "1.0.0",
-        "dist": {
-          "url": "https://github.com/namics/twig-nitro-library/archive/v1.0.0.zip",
-          "type": "zip"
-        }
-      }
-    }
-  ],
   "require": {
-    "namics/twig-nitro-library": "~1.0.0"
+    "namics/twig-nitro-library": "~1.0.1"
   },
   "autoload": {
     "psr-4": {
