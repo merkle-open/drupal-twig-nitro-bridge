@@ -102,7 +102,7 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
   public function getFileExtension() {
     $fileExtension = $this->terrificConfig['nitro']['view_file_extension'];
     if (!isset($fileExtension)) {
-      $this->logger->error('Frontend Template File Extension not defined in Terrific\'s Configuration File.');
+      $this->logger->notice('Frontend Template File Extension not defined in Terrific\'s Configuration File.');
     }
 
     return $fileExtension;
