@@ -6,6 +6,7 @@ use Deniaz\Terrific\Config\ConfigReader;
 use Deniaz\Terrific\Provider\TemplateInformationProviderInterface;
 use Drupal\Core\Config\ConfigFactory as DrupalConfigFactory;
 use Drupal\Core\File\FileSystemInterface;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 
 /**
  * Class TemplateInformationProvider.
@@ -35,16 +36,26 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
   private $terrificConfig = [];
 
   /**
+   * The logger.
+   *
+   * @var \Psr\Log\LoggerInterface
+   */
+  protected $logger;
+
+  /**
    * TemplateLocator constructor.
    *
    * @param DrupalConfigFactory $config_factory
    *    Config factory param.
    * @param FileSystemInterface $filesystem
    *    FileSystem.
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger
+   *   The logger factory service.
    */
   public function __construct(
     DrupalConfigFactory $config_factory,
-    FileSystemInterface $filesystem
+    FileSystemInterface $filesystem,
+    LoggerChannelFactoryInterface $logger_factory
   ) {
     $this->basePath = $filesystem
       ->realpath(
@@ -52,6 +63,7 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
       );
 
     $this->terrificConfig = (new ConfigReader($this->basePath))->read();
+    $this->logger = $logger_factory->get('twig_nitro_bridge');
   }
 
   /**
@@ -90,9 +102,7 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
   public function getFileExtension() {
     $fileExtension = $this->terrificConfig['nitro']['view_file_extension'];
     if (!isset($fileExtension)) {
-      throw new \DomainException(
-        "Frontend Template File Extension not defined in Terrific's Configuration File."
-      );
+      $this->logger->error('Frontend Template File Extension not defined in Terrific\'s Configuration File.');
     }
 
     return $fileExtension;

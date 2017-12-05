@@ -1,7 +1,7 @@
 services:
   twig_nitro_bridge.template_information_provider:
     class: \Drupal\twig_nitro_bridge\Adapter\TemplateInformationProvider
-    arguments: ['@config.factory', '@file_system']
+    arguments: ['@config.factory', '@file_system', '@logger.factory']
 
   twig_nitro_bridge.context_provider:
     class: \Drupal\twig_nitro_bridge\Adapter\ContextProvider
