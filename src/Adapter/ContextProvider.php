@@ -3,10 +3,13 @@
 namespace Drupal\twig_nitro_bridge\Adapter;
 
 use Deniaz\Terrific\Provider\ContextProviderInterface;
-use Twig_Compiler;
-use Twig_Node;
-use Twig_Node_Expression_Array;
-use Twig_Node_Expression_Constant;
+use Deniaz\Terrific\Twig\TerrificCompiler;
+use Twig\Compiler;
+use Twig\Node\Expression\ArrayExpression;
+use Twig\Node\Expression\ConstantExpression;
+use Twig\Node\Expression\GetAttrExpression;
+use Twig\Node\Expression\NameExpression;
+use Twig\Node\Node;
 
 /**
  * Class ContextProvider.
@@ -14,30 +17,32 @@ use Twig_Node_Expression_Constant;
  * @package Drupal\twig_nitro_bridge\Adapter
  */
 class ContextProvider implements ContextProviderInterface {
+
   /**
    * Array Key where data is stored.
    *
    * @const string TERRIFIC_ARRAY_KEY
    */
-  const TERRIFIC_ARRAY_KEY = '#terrific';
+  public const TERRIFIC_ARRAY_KEY = '#terrific';
+
   /**
-   * Compiler.
+   * The Terrific compiler.
    *
-   * @var Twig_Compiler
+   * @var \Deniaz\Terrific\Twig\TerrificCompilerInterface
    */
   private $compiler;
 
   /**
    * Component.
    *
-   * @var Twig_Node
+   * @var \Twig\Node\Node
    */
   private $component;
 
   /**
    * DataVariant.
    *
-   * @var Twig_Node
+   * @var \Twig\Node\Node
    */
   private $dataVariant;
 
@@ -52,20 +57,20 @@ class ContextProvider implements ContextProviderInterface {
    * {@inheritdoc}
    */
   public function compile(
-    Twig_Compiler $compiler,
-    Twig_Node $component,
-    Twig_Node $dataVariant = NULL,
+    Compiler $compiler,
+    Node $component,
+    Node $dataVariant = NULL,
     $only = FALSE
-  ) {
-    $this->compiler = $compiler;
+  ): void {
+    $this->compiler = TerrificCompiler::create($compiler);
     $this->component = $component;
     $this->dataVariant = $dataVariant;
     $this->only = (bool) $only;
 
     if ($this->only) {
-      $this->compiler
+      $this->compiler->getTwigCompiler()
         ->raw("\t")
-        ->raw('$tContext = [];');
+        ->raw(ContextProviderInterface::TERRIFIC_CONTEXT_VARIABLE . ' = [];');
     }
 
     $this->createContext();
@@ -74,38 +79,116 @@ class ContextProvider implements ContextProviderInterface {
   /**
    * Creates a new context or merges the variant with the existing context.
    */
-  private function createContext() {
-    if ($this->dataVariant instanceof Twig_Node_Expression_Array) {
-      $this->compiler
-        ->raw('$tContext = array_merge($tContext, ')
+  private function createContext(): void {
+    /* Is key value array used for data.
+    E.g. {% component 'my-component' { title: "My title" } %} */
+    if ($this->dataVariant instanceof ArrayExpression) {
+      $this->compiler->getTwigCompiler()
+        ->raw(ContextProviderInterface::TERRIFIC_CONTEXT_VARIABLE . ' = array_merge(' . ContextProviderInterface::TERRIFIC_CONTEXT_VARIABLE . ', ')
         ->subcompile($this->dataVariant)
         ->raw(');');
     }
+    /* Is variable used for data.
+    E.g. {% component 'my-component' myTwigVariable %} */
+    elseif ($this->dataVariant instanceof NameExpression) {
+      $this->compiler->compileAndMergeNameExpressionToContext(
+        $this->dataVariant,
+        $this->getNameExpressionDoesNotExistErrorMessage($this->dataVariant)
+      );
+    }
+    /* Is object/array used for data.
+    E.g. {% component 'my-component' myTwigObject.anObjectProperty.value %} */
+    elseif ($this->dataVariant instanceof GetAttrExpression) {
+      $this->compiler->compileAndMergeGetAttrExpressionToContext(
+        $this->dataVariant,
+        $this->getGetAttrExpressionDoesNotExistErrorMessage($this->dataVariant)
+      );
+    }
     else {
-      $dataKey = ($this->dataVariant instanceof Twig_Node_Expression_Constant)
+      $dataKey = ($this->dataVariant instanceof ConstantExpression)
         ? $this->dataVariant->getAttribute('value')
         : $this->component->getAttribute('value');
 
-      $this->compiler
-        ->raw("\n")->addIndentation()
+      $this->compiler->getTwigCompiler()
+        ->raw("\n")->write('')
         ->raw('if (')
         ->raw('isset($context["' . self::TERRIFIC_ARRAY_KEY . '"]) && ')
         ->raw('isset($context["' . self::TERRIFIC_ARRAY_KEY . '"]["' . $dataKey . '"])')
         ->raw(') {')
-        ->raw("\n")->addIndentation()->addIndentation()
-        ->raw('$tContext = array_merge($tContext, ')
+        ->raw("\n")->write('')->write('')
+        ->raw(ContextProviderInterface::TERRIFIC_CONTEXT_VARIABLE . ' = array_merge(' . ContextProviderInterface::TERRIFIC_CONTEXT_VARIABLE . ', ')
         ->raw('$context["' . self::TERRIFIC_ARRAY_KEY . '"]["' . $dataKey . '"]')
         ->raw(');')
-        ->raw("\n")->addIndentation()
+        ->raw("\n")->write('')
         ->raw('} else {')
-        ->raw("\n")->addIndentation()->addIndentation()
-        ->raw('throw new \Twig_Error("')
-        ->raw("Data Variant {$dataKey} not mapped. Check your preprocess hooks.")
+        ->raw("\n")->write('')->write('')
+        ->raw('throw new \Twig\Error\Error("')
+        ->raw(addslashes("No {$this->component->getNodeTag()} with name {$this->getComponentName()} exists."))
         ->raw('");')
-        ->raw("\n")->addIndentation()
+        ->raw("\n")->write('')
         ->raw('}')
         ->raw("\n\n");
     }
+  }
+
+  /**
+   * Returns the name of the current component.
+   *
+   * @return string
+   *   The name of the component being called.
+   */
+  protected function getComponentName(): string {
+    if ($this->component instanceof ConstantExpression) {
+      $componentName = $this->component->getAttribute('value');
+    }
+    else {
+      // TODO: Add implementations for more types.
+      $componentName = addslashes('ContextProvider->getComponentName() not implemented for class "' . get_class($this->component) . '".');
+    }
+
+    return $componentName;
+  }
+
+  /**
+   * Returns the error message to be used when the variable does not exist.
+   *
+   * @param \Twig\Node\Expression\NameExpression $expression
+   *   The expression to get the message for.
+   *
+   * @return string
+   *   The error message.
+   *
+   * @throws \Twig\Error\Error
+   */
+  protected function getNameExpressionDoesNotExistErrorMessage(NameExpression $expression): string {
+    return addslashes('The variable "'
+      . $this->compiler->getExpressionHandler()->getVariableNameFromNameExpression($expression)
+      . '" passed to the '
+      . $this->component->getNodeTag()
+      . ' '
+      . $this->getComponentName()
+      . ' does not exist.');
+  }
+
+  /**
+   * Returns the error message to be used when the variable does not exist.
+   *
+   * @param \Twig\Node\Expression\GetAttrExpression $expression
+   *   The expression to get the message for.
+   *
+   * @return string
+   *   The error message.
+   */
+  protected function getGetAttrExpressionDoesNotExistErrorMessage(GetAttrExpression $expression): string {
+    $variableNameAndArrayKeys = $this->compiler->getExpressionHandler()->buildGetAttrExpressionArrayKeyPair($expression);
+
+    return addslashes('The variable "'
+      . $variableNameAndArrayKeys->toTwigVariableString()
+      . '" passed to the '
+      . $this->component->getNodeTag()
+      . ' '
+      . $this->getComponentName()
+      . ' does not exist.');
   }
 
 }

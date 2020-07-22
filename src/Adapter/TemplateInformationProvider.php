@@ -7,6 +7,7 @@ use Deniaz\Terrific\Provider\TemplateInformationProviderInterface;
 use Drupal\Core\Config\ConfigFactory as DrupalConfigFactory;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\twig_nitro_bridge\Error\TerrificFileExtensionNotDefinedError;
 
 /**
  * Class TemplateInformationProvider.
@@ -45,11 +46,11 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
   /**
    * TemplateLocator constructor.
    *
-   * @param DrupalConfigFactory $config_factory
-   *    Config factory param.
-   * @param FileSystemInterface $filesystem
-   *    FileSystem.
-   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger
+   * @param \Drupal\Core\Config\ConfigFactory $config_factory
+   *   Config factory param.
+   * @param \Drupal\Core\File\FileSystemInterface $filesystem
+   *   FileSystem.
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   The logger factory service.
    */
   public function __construct(
@@ -70,7 +71,7 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
    * Returns a list of paths where templates can be found.
    *
    * @return array
-   *    Return array of paths.
+   *   Return array of paths.
    */
   public function getPaths() {
     if (empty($this->paths)) {
@@ -87,23 +88,49 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
     $components = $this->terrificConfig['nitro']['components'];
     foreach ($components as $name => $component) {
       $this->paths[$name] = $this->basePath . '/' . $component['path'];
+      $elements = $this->checkForComponentElements($this->paths[$name]);
+      $this->paths = array_merge($this->paths, $elements);
     }
   }
 
   /**
-   * File extension.
+   * Add elements (sub-components) folder if it exists.
    *
-   * @return mixed
-   *    Template File Extension.
-   *
-   * @throws \Drupal\twig_nitro_bridge\Adapter\DomainException
-   *    Exception.
+   * TODO: Workaround for new frontend standard.
    */
-  public function getFileExtension() {
-    $fileExtension = $this->terrificConfig['nitro']['view_file_extension'];
-    if (!isset($fileExtension)) {
-      $this->logger->notice('Frontend Template File Extension not defined in Terrific\'s Configuration File.');
+  private function checkForComponentElements($componentPath) {
+    $elements = [];
+    $dir = new \DirectoryIterator($componentPath);
+    foreach ($dir as $fileinfo) {
+      if ($fileinfo->isDir() && !$fileinfo->isDot()) {
+        $elementsDir = $componentPath . '/' . $fileinfo->getFilename() . '/' . 'elements';
+        if (file_exists($elementsDir)) {
+          $key = $fileinfo->getFilename() . '_elements';
+          $elements[$key] = $elementsDir;
+        }
+      }
     }
+
+    return $elements;
+  }
+
+  /**
+   * Returns the template file extension.
+   *
+   * @return string
+   *   Template File Extension.
+   *
+   * @throws \Drupal\twig_nitro_bridge\Error\TerrificFileExtensionNotDefinedError
+   */
+  public function getFileExtension(): string {
+    if (!isset($this->terrificConfig['nitro']['view_file_extension'])) {
+      $this->logger->notice('Frontend Template File Extension not defined in Terrific\'s Configuration File.');
+
+      throw new TerrificFileExtensionNotDefinedError();
+    }
+
+    /** @var string $fileExtension */
+    $fileExtension = $this->terrificConfig['nitro']['view_file_extension'];
 
     return $fileExtension;
   }
