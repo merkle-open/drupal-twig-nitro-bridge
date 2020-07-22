@@ -1,0 +1,7 @@
+twig_nitro_bridge.settings:
+  path: '/admin/config/twig-nitro-bridge/settings'
+  defaults:
+    _form: '\Drupal\twig_nitro_bridge\Form\TwigNitroBridgeSettingsForm'
+    _title: 'Twig nitro bridge settings'
+  requirements:
+    _permission: 'administer site configuration'
