@@ -7,13 +7,13 @@ services:
     class: \Drupal\twig_nitro_bridge\Adapter\ContextProvider
 
   twig_nitro_bridge.twig.terrific_extension:
-    class: \Deniaz\Terrific\Twig\Extension\TerrificExtension
+    class: \Namics\Terrific\Twig\Extension\TerrificExtension
     arguments: ['@twig_nitro_bridge.context_provider']
     tags:
       - { name: twig.extension }
 
   twig_nitro_bridge.twig.component_loader:
-    class: \Deniaz\Terrific\Twig\Loader\TerrificLoader
+    class: \Namics\Terrific\Twig\Loader\TerrificLoader
     arguments: ['@twig_nitro_bridge.template_information_provider']
     tags:
       - { name: twig.loader, priority: 200 }

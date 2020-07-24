@@ -2,8 +2,8 @@
 
 namespace Drupal\twig_nitro_bridge\Adapter;
 
-use Deniaz\Terrific\Provider\ContextProviderInterface;
-use Deniaz\Terrific\Twig\TerrificCompiler;
+use Namics\Terrific\Provider\ContextProviderInterface;
+use Namics\Terrific\Twig\TerrificCompiler;
 use Twig\Compiler;
 use Twig\Node\Expression\ArrayExpression;
 use Twig\Node\Expression\ConstantExpression;
@@ -28,7 +28,7 @@ class ContextProvider implements ContextProviderInterface {
   /**
    * The Terrific compiler.
    *
-   * @var \Deniaz\Terrific\Twig\TerrificCompilerInterface
+   * @var \Namics\Terrific\Twig\TerrificCompilerInterface
    */
   private $compiler;
 

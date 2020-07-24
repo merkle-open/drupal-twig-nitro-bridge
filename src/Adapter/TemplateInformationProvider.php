@@ -2,8 +2,8 @@
 
 namespace Drupal\twig_nitro_bridge\Adapter;
 
-use Deniaz\Terrific\Config\ConfigReader;
-use Deniaz\Terrific\Provider\TemplateInformationProviderInterface;
+use Namics\Terrific\Config\ConfigReader;
+use Namics\Terrific\Provider\TemplateInformationProviderInterface;
 use Drupal\Core\Config\ConfigFactory as DrupalConfigFactory;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
@@ -73,7 +73,7 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
    * @return array
    *   Return array of paths.
    */
-  public function getPaths() {
+  public function getPaths(): array {
     if (empty($this->paths)) {
       $this->generatePaths();
     }
@@ -82,9 +82,9 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
   }
 
   /**
-   * Generate Paths array from Terrific Configuration.
+   * Generate paths array from Terrific configuration.
    */
-  private function generatePaths() {
+  private function generatePaths(): void {
     $components = $this->terrificConfig['nitro']['components'];
     foreach ($components as $name => $component) {
       $this->paths[$name] = $this->basePath . '/' . $component['path'];
@@ -98,7 +98,7 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
    *
    * TODO: Workaround for new frontend standard.
    */
-  private function checkForComponentElements($componentPath) {
+  private function checkForComponentElements($componentPath): array {
     $elements = [];
     $dir = new \DirectoryIterator($componentPath);
     foreach ($dir as $fileinfo) {
