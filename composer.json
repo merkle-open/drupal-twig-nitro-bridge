@@ -13,7 +13,7 @@
     "Nitro"
   ],
   "require": {
-    "namics/twig-nitro-library": "~1.0.1"
+    "namics/twig-nitro-library": "^2.0"
   },
   "autoload": {
     "psr-4": {
