@@ -2,7 +2,7 @@
   "name": "namics/drupal-twig-nitro-bridge",
   "description": "Provides integration for the Nitro Twig library within Drupal.",
   "type": "drupal-module",
-  "license": "MIT",
+  "license": "GPL-2.0-or-later",
   "support": {
     "issues": "https://github.com/namics/drupal-twig-nitro-bridge/issues",
     "source": "https://github.com/namics/drupal-twig-nitro-bridge"
