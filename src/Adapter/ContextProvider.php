@@ -47,13 +47,6 @@ class ContextProvider implements ContextProviderInterface {
   private $dataVariant;
 
   /**
-   * Only.
-   *
-   * @var bool
-   */
-  private $only;
-
-  /**
    * {@inheritdoc}
    */
   public function compile(
@@ -65,9 +58,8 @@ class ContextProvider implements ContextProviderInterface {
     $this->compiler = TerrificCompiler::create($compiler);
     $this->component = $component;
     $this->dataVariant = $dataVariant;
-    $this->only = (bool) $only;
 
-    if ($this->only) {
+    if ($only) {
       $this->compiler->getTwigCompiler()
         ->raw("\t")
         ->raw(ContextProviderInterface::TERRIFIC_CONTEXT_VARIABLE . ' = [];');
