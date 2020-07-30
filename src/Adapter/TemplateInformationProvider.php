@@ -2,11 +2,10 @@
 
 namespace Drupal\twig_nitro_bridge\Adapter;
 
-use Deniaz\Terrific\Config\ConfigReader;
-use Deniaz\Terrific\Provider\TemplateInformationProviderInterface;
+use Namics\Terrific\Config\ConfigReader;
+use Namics\Terrific\Provider\TemplateInformationProviderInterface;
 use Drupal\Core\Config\ConfigFactory as DrupalConfigFactory;
 use Drupal\Core\File\FileSystemInterface;
-use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 
 /**
  * Class TemplateInformationProvider.
@@ -36,26 +35,16 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
   private $terrificConfig = [];
 
   /**
-   * The logger.
-   *
-   * @var \Psr\Log\LoggerInterface
-   */
-  protected $logger;
-
-  /**
    * TemplateLocator constructor.
    *
-   * @param DrupalConfigFactory $config_factory
-   *    Config factory param.
-   * @param FileSystemInterface $filesystem
-   *    FileSystem.
-   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger
-   *   The logger factory service.
+   * @param \Drupal\Core\Config\ConfigFactory $config_factory
+   *   The config factory service.
+   * @param \Drupal\Core\File\FileSystemInterface $filesystem
+   *   The file system service.
    */
   public function __construct(
     DrupalConfigFactory $config_factory,
-    FileSystemInterface $filesystem,
-    LoggerChannelFactoryInterface $logger_factory
+    FileSystemInterface $filesystem
   ) {
     $this->basePath = $filesystem
       ->realpath(
@@ -63,16 +52,15 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
       );
 
     $this->terrificConfig = (new ConfigReader($this->basePath))->read();
-    $this->logger = $logger_factory->get('twig_nitro_bridge');
   }
 
   /**
    * Returns a list of paths where templates can be found.
    *
    * @return array
-   *    Return array of paths.
+   *   Return array of paths.
    */
-  public function getPaths() {
+  public function getPaths(): array {
     if (empty($this->paths)) {
       $this->generatePaths();
     }
@@ -81,31 +69,13 @@ class TemplateInformationProvider implements TemplateInformationProviderInterfac
   }
 
   /**
-   * Generate Paths array from Terrific Configuration.
+   * Generate paths array from Terrific configuration.
    */
-  private function generatePaths() {
+  private function generatePaths(): void {
     $components = $this->terrificConfig['nitro']['components'];
     foreach ($components as $name => $component) {
       $this->paths[$name] = $this->basePath . '/' . $component['path'];
     }
-  }
-
-  /**
-   * File extension.
-   *
-   * @return mixed
-   *    Template File Extension.
-   *
-   * @throws \Drupal\twig_nitro_bridge\Adapter\DomainException
-   *    Exception.
-   */
-  public function getFileExtension() {
-    $fileExtension = $this->terrificConfig['nitro']['view_file_extension'];
-    if (!isset($fileExtension)) {
-      $this->logger->notice('Frontend Template File Extension not defined in Terrific\'s Configuration File.');
-    }
-
-    return $fileExtension;
   }
 
 }
