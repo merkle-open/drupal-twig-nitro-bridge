@@ -1,3 +1,1 @@
-# drupal-terrific
-
-Drupal Module which acts as a bridge for [twig-nitro-library](https://github.com/namics/twig-nitro-library).
+This module moved to drupal.org: https://www.drupal.org/project/twig_nitro_bridge
